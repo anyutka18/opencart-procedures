@@ -1,0 +1,48 @@
+GetCategoryProducts
+
+ DELIMITER $$ 
+CREATE PROCEDURE GetCategoryProducts (IN category_id INT, IN filter_manufacturer_id INT, IN filter_filter  varchar(256), IN filter_name text character set utf8, IN filter_description varchar(256), IN filter_tag varchar(256), IN filter_sort varchar(256), IN filter_order varchar(256), IN filter_start INT, IN filter_limit INT, IN temp_table varchar(256), IN language_id INT, IN store_id INT, IN customer_group_id INT)
+BEGIN
+DECLARE sql_stmt varchar(4000);
+SET @sql_stmt = sql_stmt;
+SET @temp_table = temp_table;
+SET @varsort = 
+CASE filter_sort
+WHEN 'p.price' THEN '(CASE WHEN special IS NOT NULL THEN special WHEN discount IS NOT NULL THEN discount ELSE p.price END) '
+WHEN 'pd.name' THEN CONCAT('LCASE(',filter_sort, ')')
+WHEN 'p.model' THEN CONCAT('LCASE(',filter_sort, ')')
+ELSE filter_sort
+END;
+SET @varorder = 
+CASE filter_order 
+WHEN 'DESC' THEN ' DESC, LCASE(pd.name) DESC'
+ELSE ' ASC, LCASE(pd.name) ASC'
+END;
+SET @varmanufacturer = 
+CASE WHEN filter_manufacturer_id > 0 THEN CONCAT('AND p.manufacturer_id = ',filter_manufacturer_id) ELSE '' END;
+
+SET @case_name = 
+CASE WHEN filter_name != '' THEN CONCAT(" AND ( LCASE(p.model) = '",filter_name,"' OR LCASE(p.sku) = '", filter_name, "' OR LCASE(p.upc) = '", filter_name, "' OR LCASE(p.ean) = '", filter_name, "' OR LCASE(p.jan) = '", filter_name, "' OR LCASE(p.isbn) = '", filter_name, "' OR LCASE(p.mpn) = '", filter_name, "')")
+ELSE ''
+END;
+
+SET @sql_stmt = CONCAT("SELECT p.product_id AS product_id, p.model AS model, p.sku AS sku, pd.name AS name, pd.description AS description, p.image AS image, p.quantity AS quantity, p.weight_class_id AS weight_class_id, p.tax_class_id AS tax_class_id, p.date_available AS date_available, p.weight AS weight, p.minimum AS minimum, p.price AS price, p2ca.category_id AS category_id, (SELECT wcd.unit FROM ya_weight_class_description wcd WHERE p.weight_class_id = wcd.weight_class_id AND wcd.language_id = ", language_id, ") AS weight_class, p.sort_order AS sort_order, p.status AS status, p.date_added AS date_added, (SELECT price FROM ya_product_special ps WHERE ps.product_id = p.product_id AND ps.customer_group_id = customer_group_id  AND ((ps.date_start = '0000-00-00' OR ps.date_start < NOW()) AND (ps.date_end = '0000-00-00' OR ps.date_end > NOW())) ORDER BY ps.priority ASC, ps.price ASC LIMIT 1) AS special, (SELECT price FROM ya_product_discount pd2 WHERE pd2.product_id = p.product_id AND pd2.customer_group_id = ", customer_group_id," AND pd2.quantity = '1' AND ((pd2.date_start = '0000-00-00' OR pd2.date_start < NOW()) AND (pd2.date_end = '0000-00-00' OR pd2.date_end > NOW())) ORDER BY pd2.priority ASC, pd2.price ASC LIMIT 1) AS discount FROM ya_product p LEFT JOIN ya_product_description pd ON (p.product_id = pd.product_id) LEFT JOIN ya_product_to_store p2s ON (p.product_id = p2s.product_id) LEFT JOIN ya_product_filter pf ON (p.product_id = pf.product_id) LEFT JOIN ya_product_to_category p2ca ON (p.product_id = p2ca.product_id)  WHERE p.product_id IN (SELECT p.product_id  FROM ya_product_to_category p2c  LEFT JOIN ya_product p ON (p2c.product_id = p.product_id)  LEFT JOIN ya_product_description pd ON (p.product_id = pd.product_id) LEFT JOIN ya_product_to_store p2s ON (p.product_id = p2s.product_id) LEFT JOIN ya_product_to_category p2ca   ON (p2ca.product_id = p.product_id) WHERE pd.language_id = ", language_id, "  AND p.status = '1' AND p2s.store_id = ", store_id, "  AND p2c.category_id = ", category_id, " ) AND p.status = '1'  ", @varmanufacturer ,@case_name," ORDER BY ", @varsort , @varorder, " LIMIT ", filter_start , ", ",filter_limit);
+PREPARE stmt FROM @sql_stmt;
+EXECUTE stmt;
+END
+
+
+SELECT sql_stmt AS TEXT_QUERY;
+END
+
+
+CREATE FUNCTION GetCategoryProductsRaw(@category_id INT, @language_id INT, @store_id INT, @customer_group_id INT) 
+RETURNS @ret TABLE (product_id INT PRIMARY KEY, model varchar(56), sku varchar(56), name varchar(256), description text, image varchar(256), quantity int, weight_class_id int, tax_class_id int, date_available datetime, weight varchar(56), minimum int, price decimal(15,4), category_id int)
+AS
+ BEGIN 
+ INSERT @ret
+ SELECT p.product_id AS product_id, p.model AS model, p.sku AS sku, pd.name AS name, pd.description AS description, p.image AS image, p.quantity AS quantity, p.weight_class_id AS weight_class_id, p.tax_class_id AS tax_class_id, p.date_available AS date_available, p.weight AS weight, p.minimum AS minimum, p.price AS price, p2ca.category_id AS category_id, (SELECT wcd.unit FROM ya_weight_class_description wcd WHERE p.weight_class_id = wcd.weight_class_id AND wcd.language_id = @language_id) AS weight_class, p.sort_order AS sort_order, p.status AS status, p.date_added AS date_added, (SELECT price FROM ya_product_special ps WHERE ps.product_id = p.product_id AND ps.customer_group_id = @customer_group_id AND ((ps.date_start = '0000-00-00' OR ps.date_start < NOW()) AND (ps.date_end = '0000-00-00' OR ps.date_end > NOW())) ORDER BY ps.priority ASC, ps.price ASC LIMIT 1) AS special FROM ya_product p LEFT JOIN ya_product_description pd ON (p.product_id = pd.product_id) LEFT JOIN ya_product_to_store p2s ON (p.product_id = p2s.product_id) LEFT JOIN ya_product_filter pf ON (p.product_id = pf.product_id) LEFT JOIN ya_product_to_category p2ca ON (p.product_id = p2ca.product_id)  WHERE p.product_id IN (SELECT p.product_id  FROM ya_product_to_category p2c  LEFT JOIN ya_product p ON (p2c.product_id = p.product_id)  LEFT JOIN ya_product_description pd ON (p.product_id = pd.product_id) LEFT JOIN ya_product_to_store p2s ON (p.product_id = p2s.product_id) LEFT JOIN ya_product_to_category p2ca   ON (p2ca.product_id = p.product_id)  WHERE pd.language_id = @language_id AND p.status = '1' AND p2s.store_id = @store_id AND p2c.category_id = @category_id) AND p.status = '1';
+ RETURN
+ END
+
+
