@@ -16,6 +16,35 @@ class ControllerCommonColumnLeft extends Controller {
 				'children' => array()
 			);
 
+			// Partners
+			$partner = array();
+
+        	if ($this->user->hasPermission('access', 'catalog/partner')) {	
+ 				$partner[] = array(
+					'name'	   => $this->language->get('text_setting'),
+					'href'     => $this->url->link('catalog/partner', 'user_token=' . $this->session->data['user_token'], true),
+					'children' => array()		
+				);
+				$partner[] = array(
+	 				'name' => $this->language->get('text_order'),
+					'href'     => $this->url->link('sale/partner_order', 'user_token=' . $this->session->data['user_token'], true),
+					'children' => array()
+				);
+
+				
+			}
+			
+			if ($partner) {
+				$data['menus'][] = array(
+					'id'       => 'menu-partner',
+        			'icon'     => 'fa-truck',
+					'name'	   => 'Партнеры',
+					'href'     => '',
+					'children' => $partner
+				);		
+			}
+			//Partners
+
 			// Catalog
 			$catalog = array();
 

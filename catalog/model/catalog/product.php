@@ -92,7 +92,6 @@ class ModelCatalogProduct extends Model {
 			$filter_name = '';
 			$temp_table = '';
 			if (!empty($data['filter_name']) || !empty($data['filter_tag'])) {
-				//$filter_name = ' AND (';
 
 				$escape_filter_name = $this->db->escape($data['filter_name']);
 
@@ -106,10 +105,6 @@ class ModelCatalogProduct extends Model {
 						//$implode[] = "pd.name LIKE '%" . $escape_word . "%'";
 						$implode[] = $escape_word;
 					}
-
-					/*if ($implode) {
-						$filter_name .= " " . implode(" AND ", $implode) . "";
-					}*/
 					if (count($words) > 0) {
 						if (count($words) == 1) {
 							$filter_name = $escape_filter_name;
@@ -153,17 +148,6 @@ class ModelCatalogProduct extends Model {
 
 				$end_escape_filter_name = $this->db->escape(utf8_strtolower($data['filter_name']));
 
-				/*if (!empty($data['filter_name'])) {
-					$filter_name .= " OR LCASE(p.model) = '" . $end_escape_filter_name . "' ";
-					$filter_name .= " OR LCASE(p.sku) = '" . $end_escape_filter_name . "' ";
-					$filter_name .= " OR LCASE(p.upc) = '" . $end_escape_filter_name . "' ";
-					$filter_name .= " OR LCASE(p.ean) = '" . $end_escape_filter_name . "' ";
-					$filter_name .= " OR LCASE(p.jan) = '" . $end_escape_filter_name . "' ";
-					$filter_name .= " OR LCASE(p.isbn) = '" . $end_escape_filter_name . "' ";
-					$filter_name .= " OR LCASE(p.mpn) = '" . $end_escape_filter_name . "' ";
-				}*/
-
-				//$filter_name .= ")";
 			}else{
 				$filter_name = '';
 			}
@@ -213,7 +197,7 @@ class ModelCatalogProduct extends Model {
 
 			$this->log->write(implode('\',\'', $filter_data));
 
-			print_r("CALL GetCategoryProducts('".implode('\',\'', $filter_data)."', ".(int)$this->config->get('config_language_id') .", ".(int)$this->config->get('config_store_id').", ".(int)$this->config->get('config_customer_group_id').")");
+			//print_r("CALL GetCategoryProducts('".implode('\',\'', $filter_data)."', ".(int)$this->config->get('config_language_id') .", ".(int)$this->config->get('config_store_id').", ".(int)$this->config->get('config_customer_group_id').")");
 
 			$query = $this->db->query("CALL GetCategoryProducts('".implode('\',\'', $filter_data)."', ".(int)$this->config->get('config_language_id') .", ".(int)$this->config->get('config_store_id').", ".(int)$this->config->get('config_customer_group_id').")");
 

@@ -32,9 +32,6 @@ EXECUTE stmt;
 END
 
 
-SELECT sql_stmt AS TEXT_QUERY;
-END
-
 
 CREATE FUNCTION GetCategoryProductsRaw(@category_id INT, @language_id INT, @store_id INT, @customer_group_id INT) 
 RETURNS @ret TABLE (product_id INT PRIMARY KEY, model varchar(56), sku varchar(56), name varchar(256), description text, image varchar(256), quantity int, weight_class_id int, tax_class_id int, date_available datetime, weight varchar(56), minimum int, price decimal(15,4), category_id int)
